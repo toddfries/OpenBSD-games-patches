@@ -2,3 +2,5 @@
 ? .gitignore
 ? status.log
 ? up.log
+cvs server: phantasia/convert.c is no longer in the repository
+cvs server: phantasia/oldplayer.h is no longer in the repository
