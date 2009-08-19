@@ -1,10 +1,8 @@
 # On branch master
 # Changed but not updated:
-#   (use "git add/rm <file>..." to update what will be committed)
+#   (use "git add <file>..." to update what will be committed)
 #   (use "git checkout -- <file>..." to discard changes in working directory)
 #
-#	deleted:    phantasia/convert.c
-#	deleted:    phantasia/oldplayer.h
 #	modified:   status.log
 #	modified:   up.log
 #
