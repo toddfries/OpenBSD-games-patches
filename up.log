@@ -2,3 +2,9 @@
 ? .gitignore
 ? status.log
 ? up.log
+P bs/bs.c
+P rogue/monster.c
+P snake/Makefile
+P snake/snake.6
+P snake/snake.c
+P snake/snscore.c

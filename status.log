@@ -3,6 +3,13 @@
 #   (use "git add <file>..." to update what will be committed)
 #   (use "git checkout -- <file>..." to discard changes in working directory)
 #
+#	modified:   bs/bs.c
+#	modified:   rogue/monster.c
+#	modified:   snake/Makefile
+#	modified:   snake/snake.6
+#	modified:   snake/snake.c
+#	modified:   snake/snscore.c
 #	modified:   status.log
+#	modified:   up.log
 #
 no changes added to commit (use "git add" and/or "git commit -a")
