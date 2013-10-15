@@ -1,4 +1,4 @@
-/*	$OpenBSD: ksyms.c,v 1.2 2013/08/29 20:22:14 naddy Exp $	*/
+/*	$OpenBSD: ksyms.c,v 1.4 2013/10/15 22:09:29 deraadt Exp $	*/
 
 /*
  * Copyright (c) 2008 Miodrag Vallat.
@@ -23,13 +23,10 @@
 #include <string.h>
 
 #include <sys/exec.h>
-#ifdef _NLIST_DO_ELF
 #include <elf_abi.h>
-#endif
 
 #include "hangman.h"
 
-int	ksyms_aout_parse();
 int	ksyms_elf_parse();
 
 void
@@ -94,27 +91,14 @@ ksetup()
 	if ((ksyms = open(Dict_name, O_RDONLY)) < 0)
 		return ksyms;
 
-	/*
-	 * Relaxed header check - /dev/ksyms is either a native a.out
-	 * binary or a native ELF binary.
-	 */
-
-#ifdef _NLIST_DO_ELF
 	if (ksyms_elf_parse() == 0)
 		return 0;
-#endif
-
-#ifdef _NLIST_DO_AOUT
-	if (ksyms_aout_parse() == 0)
-		return 0;
-#endif
 
 	close(ksyms);
 	errno = ENOEXEC;
 	return -1;
 }
 
-#ifdef _NLIST_DO_ELF
 int
 ksyms_elf_parse()
 {
@@ -160,35 +144,3 @@ ksyms_elf_parse()
 
 	return 0;
 }
-#endif
-
-#ifdef _NLIST_DO_AOUT
-int
-ksyms_aout_parse()
-{
-	struct exec eh;
-	uint32_t size;
-
-	if (lseek(ksyms, 0, SEEK_SET) == -1)
-		return -1;
-
-	if (read(ksyms, &eh, sizeof eh) != sizeof eh)
-		return -1;
-
-	if (N_BADMAG(eh))
-		return -1;
-
-	ksymoffs = (off_t)N_STROFF(eh);
-	if (lseek(ksyms, ksymoffs, SEEK_SET) == -1)
-		return -1;
-
-	if (read(ksyms, &size, sizeof size) != sizeof size)
-		return -1;
-	ksymoffs += sizeof size;
-	if (size <= sizeof size)
-		return -1;
-	ksymsize = (off_t)size - sizeof size;
-
-	return 0;
-}
-#endif
