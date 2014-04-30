@@ -1,4 +1,4 @@
-/*	$OpenBSD: hack.save.c,v 1.9 2009/10/27 23:59:25 deraadt Exp $	*/
+/*	$OpenBSD: hack.save.c,v 1.11 2014/03/11 08:05:15 guenther Exp $	*/
 
 /*
  * Copyright (c) 1985, Stichting Centrum voor Wiskunde en Informatica,
@@ -112,17 +112,17 @@ dosave0(int hu)
 	saveobjchn(fd, fcobj);
 	savemonchn(fd, fallen_down);
 	tmp = getuid();
-	bwrite(fd, (char *) &tmp, sizeof tmp);
-	bwrite(fd, (char *) &flags, sizeof(struct flag));
-	bwrite(fd, (char *) &dlevel, sizeof dlevel);
-	bwrite(fd, (char *) &maxdlevel, sizeof maxdlevel);
-	bwrite(fd, (char *) &moves, sizeof moves);
-	bwrite(fd, (char *) &u, sizeof(struct you));
+	bwrite(fd, &tmp, sizeof tmp);
+	bwrite(fd, &flags, sizeof(struct flag));
+	bwrite(fd, &dlevel, sizeof dlevel);
+	bwrite(fd, &maxdlevel, sizeof maxdlevel);
+	bwrite(fd, &moves, sizeof moves);
+	bwrite(fd, &u, sizeof(struct you));
 	if(u.ustuck)
-		bwrite(fd, (char *) &(u.ustuck->m_id), sizeof u.ustuck->m_id);
-	bwrite(fd, (char *) pl_character, sizeof pl_character);
-	bwrite(fd, (char *) genocided, sizeof genocided);
-	bwrite(fd, (char *) fut_geno, sizeof fut_geno);
+		bwrite(fd, &(u.ustuck->m_id), sizeof u.ustuck->m_id);
+	bwrite(fd, pl_character, sizeof pl_character);
+	bwrite(fd, genocided, sizeof genocided);
+	bwrite(fd, fut_geno, sizeof fut_geno);
 	savenames(fd);
 	for(tmp = 1; tmp <= maxdlevel; tmp++) {
 		extern int hackpid;
@@ -139,7 +139,7 @@ dosave0(int hu)
 		}
 		getlev(ofd, hackpid, tmp);
 		(void) close(ofd);
-		bwrite(fd, (char *) &tmp, sizeof tmp);	/* level number */
+		bwrite(fd, &tmp, sizeof tmp);		/* level number */
 		savelev(fd,tmp);			/* actual level */
 		(void) unlink(lock);
 	}
@@ -239,10 +239,6 @@ restobjchn(int fd)
 	struct obj *otmp, *otmp2;
 	struct obj *first = 0;
 	int xl;
-#ifdef lint
-	/* suppress "used before set" warning from lint */
-	otmp2 = 0;
-#endif /* lint */
 	while(1) {
 		mread(fd, (char *) &xl, sizeof(xl));
 		if(xl == -1) break;
@@ -273,10 +269,6 @@ restmonchn(int fd)
 	mread(fd, (char *)&monbegin, sizeof(monbegin));
 	differ = (char *)(&mons[0]) - (char *)(monbegin);
 
-#ifdef lint
-	/* suppress "used before set" warning from lint */
-	mtmp2 = 0;
-#endif /* lint */
 	while(1) {
 		mread(fd, (char *) &xl, sizeof(xl));
 		if(xl == -1) break;

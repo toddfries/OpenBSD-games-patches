@@ -1,4 +1,4 @@
-/*	$OpenBSD: hack.mon.c,v 1.8 2009/10/27 23:59:25 deraadt Exp $	*/
+/*	$OpenBSD: hack.mon.c,v 1.10 2014/03/11 08:05:15 guenther Exp $	*/
 
 /*
  * Copyright (c) 1985, Stichting Centrum voor Wiskunde en Informatica,
@@ -704,7 +704,7 @@ dmonsfree()
 
 	while ((mtmp = fdmon)) {
 		fdmon = mtmp->nmon;
-		free((char *) mtmp);
+		free(mtmp);
 	}
 }
 
@@ -726,9 +726,6 @@ unstuck(struct monst *mtmp)
 void
 killed(struct monst *mtmp)
 {
-#ifdef lint
-#define	NEW_SCORING
-#endif /* lint */
 	int tmp, nk, x, y;
 	struct permonst *mdat;
 
