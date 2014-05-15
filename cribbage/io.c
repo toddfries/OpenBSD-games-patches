@@ -1,4 +1,4 @@
-/*	$OpenBSD: io.c,v 1.14 2012/03/04 04:05:15 fgsch Exp $	*/
+/*	$OpenBSD: io.c,v 1.19 2014/05/09 23:56:26 schwarze Exp $	*/
 /*	$NetBSD: io.c,v 1.9 1997/07/09 06:25:47 phil Exp $	*/
 
 /*-
@@ -90,13 +90,13 @@ msgcrd(CARD c, bool brfrank, char *mid, bool brfsuit)
 	if (brfrank)
 		addmsg("%1.1s", rankchar[c.rank]);
 	else
-		addmsg(rankname[c.rank]);
+		addmsg("%s", rankname[c.rank]);
 	if (mid != NULL)
-		addmsg(mid);
+		addmsg("%s", mid);
 	if (brfsuit)
 		addmsg("%1.1s", suitchar[c.suit]);
 	else
-		addmsg(suitname[c.suit]);
+		addmsg("%s", suitname[c.suit]);
 	return (TRUE);
 }
 
@@ -160,11 +160,12 @@ infrom(CARD hand[], int n, char *prompt)
 	CARD crd;
 
 	if (n < 1) {
+		bye();
 		printf("\nINFROM: %d = n < 1!!\n", n);
 		exit(74);
 	}
 	for (;;) {
-		msg(prompt);
+		msg("%s", prompt);
 		if (incard(&crd)) {	/* if card is full card */
 			if (!isone(crd, hand, n))
 				msg("That's not in your hand");
@@ -174,6 +175,7 @@ infrom(CARD hand[], int n, char *prompt)
 					    hand[i].suit == crd.suit)
 						break;
 				if (i >= n) {
+					bye();
 			printf("\nINFROM: isone or something messed up\n");
 					exit(77);
 				}
@@ -211,23 +213,21 @@ incard(CARD *crd)
 {
 	int i;
 	int rnk, sut;
-	char *line, *p, *p1;
+	char *p, *p1;
 	bool retval;
 
 	retval = FALSE;
 	rnk = sut = EMPTY;
-	if (!(line = get_line()))
+	p1 = get_line();
+	if (*p1 == '\0')
 		goto gotit;
-	p = p1 = line;
+	p = p1;
 	while (*p1 != ' ' && *p1 != '\0')
 		++p1;
 	*p1++ = '\0';
-	if (*p == '\0')
-		goto gotit;
 
 	/* IMPORTANT: no real card has 2 char first name */
-	if (strlen(p) == 2) {	/* check for short form */
-		rnk = EMPTY;
+	if (p + 3 == p1) {	/* check for short form */
 		for (i = 0; i < RANKS; i++) {
 			if (*p == *rankchar[i]) {
 				rnk = i;
@@ -237,7 +237,6 @@ incard(CARD *crd)
 		if (rnk == EMPTY)
 			goto gotit;	/* it's nothing... */
 		++p;		/* advance to next char */
-		sut = EMPTY;
 		for (i = 0; i < SUITS; i++) {
 			if (*p == *suitchar[i]) {
 				sut = i;
@@ -248,30 +247,26 @@ incard(CARD *crd)
 			retval = TRUE;
 		goto gotit;
 	}
-	rnk = EMPTY;
 	for (i = 0; i < RANKS; i++) {
 		if (!strcmp(p, rankname[i]) || !strcmp(p, rankchar[i])) {
 			rnk = i;
 			break;
 		}
 	}
-	if (rnk == EMPTY)
+	if (rnk == EMPTY || *p1 == '\0')
 		goto gotit;
 	p = p1;
 	while (*p1 != ' ' && *p1 != '\0')
 		++p1;
 	*p1++ = '\0';
-	if (*p == '\0')
-		goto gotit;
 	if (!strcmp("OF", p)) {
+		if (*p1 == '\0')
+			goto gotit;
 		p = p1;
 		while (*p1 != ' ' && *p1 != '\0')
 			++p1;
-		*p1++ = '\0';
-		if (*p == '\0')
-			goto gotit;
+		*p1 = '\0';
 	}
-	sut = EMPTY;
 	for (i = 0; i < SUITS; i++) {
 		if (!strcmp(p, suitname[i]) || !strcmp(p, suitchar[i])) {
 			sut = i;
@@ -314,8 +309,9 @@ number(int lo, int hi, char *prompt)
 	int sum, tmp;
 
 	for (sum = 0;;) {
-		msg(prompt);
-		if (!(p = get_line()) || *p == '\0') {
+		msg("%s", prompt);
+		p = get_line();
+		if (*p == '\0') {
 			msg(quiet ? "Not a number" :
 			    "That doesn't look like a number");
 			continue;
@@ -512,7 +508,7 @@ over:
 char *
 get_line(void)
 {
-	char *sp;
+	size_t pos;
 	int c, oy, ox;
 	WINDOW *oscr;
 
@@ -521,39 +517,37 @@ get_line(void)
 	getyx(stdscr, oy, ox);
 	refresh();
 	/* loop reading in the string, and put it in a temporary buffer */
-	for (sp = linebuf; (c = readchar()) != '\n'; clrtoeol(), refresh()) {
+	for (pos = 0; (c = readchar()) != '\n'; clrtoeol(), refresh()) {
 		if (c == -1)
 			continue;
-		else
-			if (c == erasechar()) {	/* process erase character */
-				if (sp > linebuf) {
-					int i;
-
-					sp--;
-					for (i = strlen(unctrl(*sp)); i; i--)
-						addch('\b');
-				}
-				continue;
-			} else
-				if (c == killchar()) {	/* process kill
-							 * character */
-					sp = linebuf;
-					move(oy, ox);
-					continue;
-				} else
-					if (sp == linebuf && c == ' ')
-						continue;
-		if (sp >= &linebuf[LINESIZE - 1] || !(isprint(c) || c == ' '))
-			putchar(CTRL('G'));
-		else {
-			if (islower(c))
-				c = toupper(c);
-			*sp++ = c;
-			addstr(unctrl(c));
-			Mpos++;
+		if (c == ' ' && (pos == 0 || linebuf[pos - 1] == ' '))
+			continue;
+		if (c == erasechar()) {
+			if (pos > 0) {
+				int i;
+				pos--;
+				for (i = strlen(unctrl(linebuf[pos])); i; i--)
+					addch('\b');
+			}
+			continue;
 		}
+		if (c == killchar()) {
+			pos = 0;
+			move(oy, ox);
+			continue;
+		}
+		if (pos >= LINESIZE - 1 || !(isalnum(c) || c == ' ')) {
+			beep();
+			continue;
+		}
+		if (islower(c))
+			c = toupper(c);
+		linebuf[pos++] = c;
+		addstr(unctrl(c));
+		Mpos++;
 	}
-	*sp = '\0';
+	while (pos < sizeof(linebuf))
+		linebuf[pos++] = '\0';
 	stdscr = oscr;
 	return (linebuf);
 }
