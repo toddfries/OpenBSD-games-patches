@@ -1,4 +1,4 @@
-/*	$OpenBSD: update.c,v 1.12 2009/10/27 23:59:23 deraadt Exp $	*/
+/*	$OpenBSD: update.c,v 1.14 2014/07/13 14:01:04 tedu Exp $	*/
 
 /*-
  * Copyright (c) 1990, 1993
@@ -43,16 +43,28 @@
 
 #include "include.h"
 
+int seeded;
+void
+setseed(const char *seed)
+{
+	seeded = 1;
+	srandom(atol(seed));
+}
+
+uint32_t
+atcrandom()
+{
+	if (seeded)
+		return random();
+	else
+		return arc4random();
+}
+
 void
 update(int dummy)
 {
 	int	i, dir_diff, unclean;
 	PLANE	*pp, *p1, *p2;
-
-#ifdef SYSV
-	alarm(0);
-	signal(SIGALRM, update);
-#endif
 
 	clck++;
 
@@ -201,12 +213,8 @@ update(int dummy)
 	 * Otherwise, prop jobs show up *on* entrance.  Remember that
 	 * we don't update props on odd updates.
 	 */
-	if ((random() % sp->newplane_time) == 0)
+	if ((atcrandom() % sp->newplane_time) == 0)
 		addplane();
-
-#ifdef SYSV
-	alarm(sp->update_secs);
-#endif
 }
 
 const char *
@@ -301,10 +309,10 @@ addplane(void)
 	memset(&p, 0, sizeof (p));
 
 	p.status = S_MARKED;
-	p.plane_type = random() % 2;
+	p.plane_type = atcrandom() % 2;
 
 	num_starts = sp->num_exits + sp->num_airports;
-	rnd = random() % num_starts;
+	rnd = atcrandom() % num_starts;
 
 	if (rnd < sp->num_exits) {
 		p.dest_type = T_EXIT;
@@ -317,7 +325,7 @@ addplane(void)
 	/* loop until we get a plane not near another */
 	for (i = 0; i < num_starts; i++) {
 		/* loop till we get a different start point */
-		while ((rnd2 = random() % num_starts) == rnd)
+		while ((rnd2 = atcrandom() % num_starts) == rnd)
 			;
 		if (rnd2 < sp->num_exits) {
 			p.orig_type = T_EXIT;
